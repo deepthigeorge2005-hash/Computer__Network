@@ -5,19 +5,7 @@ Socket Programming
 To implement TCP client-server applications using socket programming and enable communication between the client and server for processing and exchanging data.
 
 ## Commands Used
-socket() – Create a TCP socket
-bind() – Assign IP address and port to the server
-listen() – Wait for client connections
-accept() – Accept a client connection
-connect() – Connect the client to the server
-send() – Send data through the socket
-recv() – Receive data through the socket
-close() – Close the socket connection
-inet_pton() – Convert IP address to binary form
-htons() – Convert port number to network byte order
-strlen() – Find string length
-strcpy() – Copy strings
-toupper() – Convert characters to uppercase
+socket(), bind(), listen(), accept(), connect(), send(), recv(), close(), inet_pton(), htons(), strlen(), strcpy(), toupper() 
 
 ## Procedure
 Create a TCP socket at the server and client.
