@@ -1,0 +1,667 @@
+Socket Programming
+
+>>>SERVER
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
+
+#define PORT 8080
+
+int main()
+{
+    int serverSocket, clientSocket;
+    struct sockaddr_in serverAddr;
+    socklen_t addrSize;
+
+    char buffer[1024];
+
+    /* Create Socket */
+
+    serverSocket = socket(AF_INET, SOCK_STREAM, 0);
+
+    if(serverSocket < 0)
+    {
+        perror("Socket Creation Failed");
+        exit(1);
+    }
+
+    printf("Socket Created Successfully...\n");
+
+    /* Server Address */
+
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_addr.s_addr = INADDR_ANY;
+    serverAddr.sin_port = htons(PORT);
+
+    /* Bind */
+
+    if(bind(serverSocket,
+            (struct sockaddr*)&serverAddr,
+            sizeof(serverAddr)) < 0)
+    {
+        perror("Bind Failed");
+        exit(1);
+    }
+
+    printf("Bind Successful...\n");
+
+    /* Listen */
+
+    listen(serverSocket,5);
+
+    printf("Waiting for Client...\n");
+
+    addrSize = sizeof(serverAddr);
+
+    /* Accept */
+
+    clientSocket = accept(serverSocket,
+                          NULL,
+                          NULL);
+
+    if(clientSocket < 0)
+    {
+        perror("Accept Failed");
+        exit(1);
+    }
+
+    printf("Client Connected...\n");
+
+    /* Receive */
+
+    recv(clientSocket,
+         buffer,
+         sizeof(buffer),
+         0);
+
+    printf("Client Says : %s\n",buffer);
+
+    /* Reply */
+
+    strcpy(buffer,"Hello Client");
+
+    send(clientSocket,
+         buffer,
+         strlen(buffer)+1,
+         0);
+
+    printf("Reply Sent...\n");
+
+    close(clientSocket);
+
+    close(serverSocket);
+
+    printf("Connection Closed...\n");
+
+    return 0;
+}
+
+
+>>>CLIENT
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#define PORT 8080
+
+int main()
+{
+    int sockfd;
+    struct sockaddr_in serverAddr;
+
+    char buffer[1024];
+
+    /* Create Socket */
+
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+
+    if(sockfd < 0)
+    {
+        perror("Socket Creation Failed");
+        exit(1);
+    }
+
+    printf("Socket Created Successfully...\n");
+
+    /* Server Address */
+
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_port = htons(PORT);
+
+    inet_pton(AF_INET,
+              "127.0.0.1",
+              &serverAddr.sin_addr);
+
+    /* Connect */
+
+    if(connect(sockfd,
+               (struct sockaddr *)&serverAddr,
+               sizeof(serverAddr)) < 0)
+    {
+        perror("Connection Failed");
+        exit(1);
+    }
+
+    printf("Connected to Server...\n");
+
+    /* Read Message */
+
+    printf("Enter Message : ");
+    fgets(buffer,sizeof(buffer),stdin);
+
+    /* Send */
+
+    send(sockfd,
+         buffer,
+         strlen(buffer)+1,
+         0);
+
+    printf("Message Sent...\n");
+
+    /* Receive */
+
+    recv(sockfd,
+         buffer,
+         sizeof(buffer),
+         0);
+
+    printf("\nReply from Server : %s\n",
+           buffer);
+
+    /* Close */
+
+    close(sockfd);
+
+    printf("Connection Closed...\n");
+
+    return 0;
+}
+
+**************************************************************************
+OUTPUT
+
+student@student-OptiPlex-3020:~/Desktop/cn$ gcc server.c -o server
+student@student-OptiPlex-3020:~/Desktop/cn$ ./server
+Socket Created Successfully...
+Bind Successful...
+Waiting for Client...
+Client Connected...
+Client Says : HELLO SERVER
+
+Reply Sent...
+Connection Closed...
+
+
+
+student@student-OptiPlex-3020:~/Desktop/cn$ gcc client.c -o client
+student@student-OptiPlex-3020:~/Desktop/cn$ ./client
+Socket Created Successfully...
+Connected to Server...
+Enter Message : HELLO SERVER
+Message Sent...
+
+Reply from Server : Hello Client
+Connection Closed...
+**********************************************************************************
+
+REVERSE A STRING
+
+>>>SERVER
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
+
+#define PORT 8080
+
+int main()
+{
+    int serverSocket, clientSocket;
+    struct sockaddr_in serverAddr;
+    char buffer[1024];
+    int i, len;
+    char temp;
+
+    /* Create Socket */
+    serverSocket = socket(AF_INET, SOCK_STREAM, 0);
+
+    if(serverSocket < 0)
+    {
+        perror("Socket Creation Failed");
+        exit(1);
+    }
+
+    printf("Socket Created Successfully...\n");
+
+    /* Server Address */
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_addr.s_addr = INADDR_ANY;
+    serverAddr.sin_port = htons(PORT);
+
+    /* Bind */
+    if(bind(serverSocket,
+            (struct sockaddr*)&serverAddr,
+            sizeof(serverAddr)) < 0)
+    {
+        perror("Bind Failed");
+        exit(1);
+    }
+
+    printf("Bind Successful...\n");
+
+    /* Listen */
+    listen(serverSocket, 5);
+
+    printf("Waiting for Client...\n");
+
+    /* Accept */
+    clientSocket = accept(serverSocket, NULL, NULL);
+
+    if(clientSocket < 0)
+    {
+        perror("Accept Failed");
+        exit(1);
+    }
+
+    printf("Client Connected...\n");
+
+    /* Receive String */
+    memset(buffer, 0, sizeof(buffer));
+
+    recv(clientSocket,
+         buffer,
+         sizeof(buffer),
+         0);
+
+    printf("String Received : %s\n", buffer);
+
+    /* Remove newline if present */
+    buffer[strcspn(buffer, "\n")] = '\0';
+
+    /* Reverse String */
+    len = strlen(buffer);
+
+    for(i = 0; i < len / 2; i++)
+    {
+        temp = buffer[i];
+        buffer[i] = buffer[len - i - 1];
+        buffer[len - i - 1] = temp;
+    }
+
+    printf("Reversed String : %s\n", buffer);
+
+    /* Send Reversed String */
+    send(clientSocket,
+         buffer,
+         strlen(buffer) + 1,
+         0);
+
+    printf("Reversed String Sent...\n");
+
+    /* Close */
+    close(clientSocket);
+    close(serverSocket);
+
+    printf("Connection Closed...\n");
+
+    return 0;
+}
+
+>>>CLIENT
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
+
+#define PORT 8080
+
+int main()
+{
+    int sockfd;
+    struct sockaddr_in serverAddr;
+    char buffer[1024];
+
+    /* Create Socket */
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+
+    if(sockfd < 0)
+    {
+        perror("Socket Creation Failed");
+        exit(1);
+    }
+
+    printf("Socket Created Successfully...\n");
+
+    /* Server Address */
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_port = htons(PORT);
+
+    inet_pton(AF_INET,
+              "127.0.0.1",
+              &serverAddr.sin_addr);
+
+    /* Connect */
+    if(connect(sockfd,
+               (struct sockaddr *)&serverAddr,
+               sizeof(serverAddr)) < 0)
+    {
+        perror("Connection Failed");
+        exit(1);
+    }
+
+    printf("Connected to Server...\n");
+
+    /* Read String */
+    printf("Enter String : ");
+    fgets(buffer, sizeof(buffer), stdin);
+
+    /* Send String */
+    send(sockfd,
+         buffer,
+         strlen(buffer) + 1,
+         0);
+
+    printf("String Sent Successfully...\n");
+
+    /* Receive Reversed String */
+    memset(buffer, 0, sizeof(buffer));
+
+    recv(sockfd,
+         buffer,
+         sizeof(buffer),
+         0);
+
+    printf("\nReversed String from Server : %s\n",
+           buffer);
+
+    /* Close */
+    close(sockfd);
+
+    printf("Connection Closed...\n");
+
+    return 0;
+}
+
+****************************************************************
+OUTPUT
+
+student@student-OptiPlex-3020:~/Desktop/cn$ gcc server.c -o server
+student@student-OptiPlex-3020:~/Desktop/cn$ ./server
+Socket Created Successfully...
+Bind Successful...
+Waiting for Client...
+Client Connected...
+String Received : HELLO SERVER
+
+Reversed String : REVRES OLLEH
+Reversed String Sent...
+Connection Closed...
+
+
+student@student-OptiPlex-3020:~/Desktop/cn$ gcc client.c -o client
+student@student-OptiPlex-3020:~/Desktop/cn$ ./client
+Socket Created Successfully...
+Connected to Server...
+Enter String : HELLO SERVER
+String Sent Successfully...
+
+Reversed String from Server : REVRES OLLEH
+Connection Closed...
+
+*******************************************************************
+
+ARRAY SORTING
+
+>>>SERVER
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
+
+#define PORT 8080
+#define MAX 100
+
+int main()
+{
+    int serverSocket, clientSocket;
+    struct sockaddr_in serverAddr;
+    int arr[MAX];
+    int n, i, j, temp;
+
+    /* Create Socket */
+    serverSocket = socket(AF_INET, SOCK_STREAM, 0);
+
+    if(serverSocket < 0)
+    {
+        perror("Socket Creation Failed");
+        exit(1);
+    }
+
+    printf("Socket Created Successfully...\n");
+
+    /* Server Address */
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_addr.s_addr = INADDR_ANY;
+    serverAddr.sin_port = htons(PORT);
+
+    /* Bind */
+    if(bind(serverSocket,
+            (struct sockaddr*)&serverAddr,
+            sizeof(serverAddr)) < 0)
+    {
+        perror("Bind Failed");
+        exit(1);
+    }
+
+    printf("Bind Successful...\n");
+
+    /* Listen */
+    listen(serverSocket, 5);
+
+    printf("Waiting for Client...\n");
+
+    /* Accept */
+    clientSocket = accept(serverSocket, NULL, NULL);
+
+    if(clientSocket < 0)
+    {
+        perror("Accept Failed");
+        exit(1);
+    }
+
+    printf("Client Connected...\n");
+
+    /* Receive array size */
+    recv(clientSocket, &n, sizeof(n), 0);
+
+    /* Receive array */
+    recv(clientSocket, arr, n * sizeof(int), 0);
+
+    printf("Array Received : ");
+
+    for(i = 0; i < n; i++)
+    {
+        printf("%d ", arr[i]);
+    }
+
+    printf("\n");
+
+    /* Sort Array - Bubble Sort */
+    for(i = 0; i < n - 1; i++)
+    {
+        for(j = 0; j < n - i - 1; j++)
+        {
+            if(arr[j] > arr[j + 1])
+            {
+                temp = arr[j];
+                arr[j] = arr[j + 1];
+                arr[j + 1] = temp;
+            }
+        }
+    }
+
+    printf("Sorted Array : ");
+
+    for(i = 0; i < n; i++)
+    {
+        printf("%d ", arr[i]);
+    }
+
+    printf("\n");
+
+    /* Send sorted array */
+    send(clientSocket,
+         arr,
+         n * sizeof(int),
+         0);
+
+    printf("Sorted Array Sent...\n");
+
+    /* Close */
+    close(clientSocket);
+    close(serverSocket);
+
+    printf("Connection Closed...\n");
+
+    return 0;
+}
+
+>>>CLIENT
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
+
+#define PORT 8080
+#define MAX 100
+
+int main()
+{
+    int sockfd;
+    struct sockaddr_in serverAddr;
+    int arr[MAX];
+    int n, i;
+
+    /* Create Socket */
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+
+    if(sockfd < 0)
+    {
+        perror("Socket Creation Failed");
+        exit(1);
+    }
+
+    printf("Socket Created Successfully...\n");
+
+    /* Server Address */
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_port = htons(PORT);
+
+    inet_pton(AF_INET,
+              "127.0.0.1",
+              &serverAddr.sin_addr);
+
+    /* Connect */
+    if(connect(sockfd,
+               (struct sockaddr *)&serverAddr,
+               sizeof(serverAddr)) < 0)
+    {
+        perror("Connection Failed");
+        exit(1);
+    }
+
+    printf("Connected to Server...\n");
+
+    /* Read array size */
+    printf("Enter number of elements : ");
+    scanf("%d", &n);
+
+    /* Read array */
+    printf("Enter %d elements:\n", n);
+
+    for(i = 0; i < n; i++)
+    {
+        scanf("%d", &arr[i]);
+    }
+
+    /* Send array size */
+    send(sockfd,
+         &n,
+         sizeof(n),
+         0);
+
+    /* Send array */
+    send(sockfd,
+         arr,
+         n * sizeof(int),
+         0);
+
+    printf("Array Sent Successfully...\n");
+
+    /* Receive sorted array */
+    recv(sockfd,
+         arr,
+         n * sizeof(int),
+         0);
+
+    printf("\nSorted Array from Server : ");
+
+    for(i = 0; i < n; i++)
+    {
+        printf("%d ", arr[i]);
+    }
+
+    printf("\n");
+
+    /* Close */
+    close(sockfd);
+
+    printf("Connection Closed...\n");
+
+    return 0;
+}
+
+*******************************************************************************
+OUTPUT
+
+student@student-OptiPlex-3020:~/Desktop/cn$ gcc server.c -o server
+student@student-OptiPlex-3020:~/Desktop/cn$ ./server
+Socket Created Successfully...
+Bind Successful...
+Waiting for Client...
+Client Connected...
+Array Received : 50 40 30 20 10 
+Sorted Array : 10 20 30 40 50 
+Sorted Array Sent...
+Connection Closed...
+
+student@student-OptiPlex-3020:~/Desktop/cn$ gcc client.c -o client
+student@student-OptiPlex-3020:~/Desktop/cn$ ./client
+Socket Created Successfully...
+Connected to Server...
+Enter number of elements : 5             
+Enter 5 elements:
+50 40 30 20 10
+Array Sent Successfully...
+
+Sorted Array from Server : 10 20 30 40 50 
+Connection Closed...
+*******************************************************************************
